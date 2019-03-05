@@ -1,2 +1,2 @@
 # cs3113
-Intro to Game Development
+Intro to Game Programming
