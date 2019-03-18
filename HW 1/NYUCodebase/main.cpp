@@ -206,7 +206,6 @@ int main(int argc, char *argv[])
 
 
 
-
 		//---------------------------------Untextured---------------------------------------------------------------------
 		modelMatrix = glm::mat4(1.0f); //Setting starting Point	
 		modelMatrix = glm::translate(modelMatrix, glm::vec3(0.0f, -0.6f, 0.0f)); //Moving Image
@@ -238,6 +237,7 @@ int main(int argc, char *argv[])
 		glDrawArrays(GL_TRIANGLES, 0, 6); //Draw Previously Setup Object																
 		glDisableVertexAttribArray(program.positionAttribute); //Undraw Coordinates														
 		glDisableVertexAttribArray(program.texCoordAttribute); //Undraw Textured Coordinates	
+
 
 		//=================================================================================================================================>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>IMAGE 3
 		modelMatrix = glm::mat4(1.0f); //Setting starting Point	
