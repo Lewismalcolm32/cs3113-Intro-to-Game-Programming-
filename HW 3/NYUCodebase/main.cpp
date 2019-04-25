@@ -21,6 +21,7 @@
 #define RESOURCE_FOLDER ""
 #else
 #define RESOURCE_FOLDER "NYUCodebase.app/Contents/Resources/"
+
 #endif
 #define MAX_BULLETS 30
 using namespace std;
@@ -138,11 +139,12 @@ class Entity{
 
 public:
 	Entity() {}
-	Entity ( float x, float y, float h) 
+	Entity ( float x, float y, float h, float yBullets = 0.0f) 
 	{
 		position.x = x;
 		position.y = y;
 		velocity.x = h;
+		velocity.y = yBullets;
 	}
 	void Draw(ShaderProgram &program);
 	//void Update(float elapsed);
@@ -167,12 +169,190 @@ void Entity::Draw(ShaderProgram &program) {
 
 
 
-Entity player;
 
-void Render(ShaderProgram &program) 
-{
-	player.Draw(program);
+
+
+
+//Entity player;
+vector<Entity> enemies; //--------------------------Enemies
+
+struct GameState {
+	Entity player;
+	vector<Entity> enemies;
+	Entity bullets[MAX_BULLETS];
+};
+GameState state;
+
+int bulletIndex = 0;
+
+void shootBullet(Entity &ship) {
+
+	state.bullets[bulletIndex].position.x = ship.position.x;
+	state.bullets[bulletIndex].position.y = ship.position.y;
+	bulletIndex++;
+
+	if (bulletIndex > MAX_BULLETS - 1)
+	{
+		bulletIndex = 0;
+	}
+
+
 }
+
+GLuint fontTexture;
+void DrawText(ShaderProgram &program, int fontTexture, std::string text, float size, float spacing) {
+	float character_size = 1.0 / 16.0f;
+	std::vector<float> vertexData;
+	std::vector<float> texCoordData;
+	for (int i = 0; i < text.size(); i++) {
+		int spriteIndex = (int)text[i];
+		float texture_x = (float)(spriteIndex % 16) / 16.0f;
+		float texture_y = (float)(spriteIndex / 16) / 16.0f;
+		vertexData.insert(vertexData.end(), {
+		((size + spacing) * i) + (-0.5f * size), 0.5f * size,
+		((size + spacing) * i) + (-0.5f * size), -0.5f * size,
+		((size + spacing) * i) + (0.5f * size), 0.5f * size,
+		((size + spacing) * i) + (0.5f * size), -0.5f * size,
+		((size + spacing) * i) + (0.5f * size), 0.5f * size,
+		((size + spacing) * i) + (-0.5f * size), -0.5f * size,
+			});
+		texCoordData.insert(texCoordData.end(), {
+		texture_x, texture_y,
+		texture_x, texture_y + character_size,
+		texture_x + character_size, texture_y,
+		texture_x + character_size, texture_y + character_size,
+		texture_x + character_size, texture_y,
+		texture_x, texture_y + character_size,
+			});
+	}
+	glBindTexture(GL_TEXTURE_2D, fontTexture);
+	// draw this data (use the .data() method of std::vector to get pointer to data)
+	// draw this yourself, use text.size() * 6 or vertexData.size()/2 to get number of vertices    
+
+	glVertexAttribPointer(program.positionAttribute, 2, GL_FLOAT, false, 0, vertexData.data());
+	glEnableVertexAttribArray(program.positionAttribute);
+
+	glVertexAttribPointer(program.texCoordAttribute, 2, GL_FLOAT, false, 0, texCoordData.data());
+	glEnableVertexAttribArray(program.texCoordAttribute);
+
+	glDrawArrays(GL_TRIANGLES, 0, text.size() * 6);
+
+	glDisableVertexAttribArray(program.positionAttribute);
+	glDisableVertexAttribArray(program.texCoordAttribute);
+
+}
+//void Render(ShaderProgram &program) 
+//{
+//	player.Draw(program);
+//}
+
+
+
+
+
+
+enum GameMode { STATE_MAIN_MENU, STATE_GAME_LEVEL };
+GameMode mode = STATE_MAIN_MENU;
+
+void RenderMainMenu(ShaderProgram& program) {
+	//do some hawt stuff;
+	glm::mat4 modelMatrix = glm::mat4(1.0f);
+	modelMatrix = glm::translate(modelMatrix, glm::vec3(-1.0f, 0.0f, 0.0f));
+	program.SetModelMatrix(modelMatrix);
+	DrawText(program, fontTexture, "HELLO BIT", 0.20f, 0.0f);
+
+}
+
+void RenderGameLevel(ShaderProgram& program, GameState &state) {
+	//do some hawt stuff;
+	state.player.Draw(program);
+
+	for (Entity &enemy : state.enemies)
+	{
+		enemy.Draw(program);
+	}
+
+
+	for (Entity &bullet : state.bullets)
+	{
+		bullet.Draw(program);
+
+	}
+
+
+
+
+}
+
+void UpdateGameLevel(GameState& state, float elapsed) {
+	
+	const Uint8 *keys = SDL_GetKeyboardState(NULL);
+
+
+	if (keys[SDL_SCANCODE_LEFT])
+	{
+		state.player.position.x += -(state.player.velocity.x * elapsed);
+	}
+
+	if (keys[SDL_SCANCODE_RIGHT])
+	{
+		state.player.position.x += (state.player.velocity.x * elapsed);
+	}
+
+	for (Entity &bullet : state.bullets)
+	{
+		bullet.position.y += elapsed * bullet.velocity.y;
+
+	}
+
+
+	//-------------------------------------Collision-------------------------------------------
+
+	for (int i = 0; i < state.enemies.size(); ++i)
+	{
+
+		for (int j = 0; j < MAX_BULLETS; ++j)
+		{
+			float bulletEnemyCollisionY = (abs(state.enemies[i].position.y - state.bullets[j].position.y)) - ((state.bullets[j].size.y + state.enemies[i].size.y) / 2);
+			float bulletEnemyCollisionX = (abs(state.enemies[i].position.x - state.bullets[j].position.x)) - ((state.bullets[j].size.x + state.enemies[i].size.x) / 2);
+
+
+			if ((bulletEnemyCollisionY <= 0) && (bulletEnemyCollisionX <= 0)) {
+				state.enemies[i].position.y = -1000.0f;
+				state.bullets[j].position.y = 1000.0f;
+			}
+
+
+		}
+	}
+
+
+}
+
+void Render(ShaderProgram& program) {
+	switch (mode) {
+	case STATE_MAIN_MENU:
+		RenderMainMenu(program);
+		break;
+	case STATE_GAME_LEVEL:
+		RenderGameLevel(program, state);
+		break;
+	}
+}
+
+void Update(float elapsed) {
+	switch (mode) {
+	case STATE_MAIN_MENU:
+		break;
+	case STATE_GAME_LEVEL:
+		UpdateGameLevel(state, elapsed);
+		break;
+	}
+}
+
+
+
+
 
 
 
@@ -222,16 +402,71 @@ int main(int argc, char *argv[])
 
 
 	GLuint spriteSheetTexture = LoadTexture("sheet.png");
+	fontTexture = LoadTexture("font1.png");
 	SheetSprite mySprite = SheetSprite(spriteSheetTexture, 425.0f / 1024.0f, 468.0f / 1024.0f, 93.0f / 1024.0f, 84.0f /	1024.0f, 0.2f);
 
 	Entity Josh(0.0f, -0.9f, 1.0f);
 	Josh.sprite = mySprite;
 	Josh.size.x = mySprite.size * (mySprite.width / mySprite.height);
 	Josh.size.y = mySprite.size;
+
+	state.player = Josh;
+	//<SubTexture name="ufoYellow.png" x="505" y="898" width="91" height="91"/>
 	
+	SheetSprite myEnemySprite = SheetSprite(spriteSheetTexture, 505.0f / 1024.0f, 898.0f / 1024.0f, 91.0f / 1024.0f, 91.0f / 1024.0f, 0.3f);
+	/*Entity Momo(0.0f, 0.8f, 1.0f);
+	Momo.sprite = myEnemySprite;
+	Momo.size.x = myEnemySprite.size * (myEnemySprite.width / myEnemySprite.height);
+	Momo.size.y = myEnemySprite.size;*/
+
+	float x = -1.0f;
+	float y = 0.8f;
+	int count = 0;
+
+	for (int i = 0; i < 28; ++i)
+	{
+		Entity Momo(x, y, 1.0f);
+		Momo.sprite = myEnemySprite;
+		Momo.size.x = myEnemySprite.size * (myEnemySprite.width / myEnemySprite.height);
+		Momo.size.y = myEnemySprite.size;
+		enemies.push_back(Momo);
+		x += Momo.size.x;
+		count++;
+
+		if (count==7)
+		{
+			x = -1.0f;
+			y -= myEnemySprite.size;
+			count = 0;
+		}
+		
+		
+	}
+
+	state.enemies = enemies; 
+
+	//Laser
+	//<SubTexture name="laserBlue10.png" x="740" y="724" width="37" height="37"/>
+
+	SheetSprite myPlayerBullet = SheetSprite(spriteSheetTexture, 740.0f / 1024.0f, 724.0f / 1024.0f, 37.0f / 1024.0f, 37.0f / 1024.0f, 0.05f);
+
+	for (int i = 0; i < MAX_BULLETS; ++i) { 
+		
+		state.bullets[i].position.x = -2000.0f;
+		state.bullets[i].sprite = myPlayerBullet;
+		state.bullets[i].velocity.y = 1.0f;
+
+	}
+
 
 	float lastFrameTicks = 0.0f; 
 
+
+
+
+
+
+	
 
 
 	
@@ -248,6 +483,17 @@ int main(int argc, char *argv[])
 			{
 				done = true;
 			}
+			else if (event.type == SDL_KEYDOWN)
+			{
+				if (event.key.keysym.scancode == SDL_SCANCODE_SPACE)
+				{
+					if (mode == STATE_MAIN_MENU)
+					{
+						mode = STATE_GAME_LEVEL;
+					}
+					shootBullet(state.player);
+				}
+			}
 			
 		}
 
@@ -263,19 +509,9 @@ int main(int argc, char *argv[])
 		float speed = 1.0f;
 		
 
-		const Uint8 *keys = SDL_GetKeyboardState(NULL);
-		
-		
-		if (keys[SDL_SCANCODE_LEFT]) 
-			{
-				Josh.position.x += -(Josh.velocity.x * elapsed);
-			}//
-		if (keys[SDL_SCANCODE_RIGHT]) 
-			{
-				Josh.position.x += (Josh.velocity.x * elapsed);
-			}
 
-		Josh.Draw(program);
+		//
+		////Momo.Draw(program);
 
 
 
@@ -283,6 +519,25 @@ int main(int argc, char *argv[])
 
 
 		
+		//indicate right side wins
+
+		//float leftX = -1.67f;
+		//float rightX = 1.67f;
+
+		//float LeftCollisionY = (abs(leftY - ballY)) - ((ballHeight + paddleHeight) / 2); // 1, 2, 3, 4 quadrants to check using collY and collX
+		//float LeftCollisionX = (abs(leftX - ballX)) - ((ballWidth + paddleWidth) / 2);
+
+		//float RightCollisionY = (abs(rightY - ballY)) - ((ballHeight + paddleHeight) / 2);
+		//float RightCollisionX = (abs(rightX - ballX)) - ((ballHeight + paddleWidth) / 2);
+
+		//if ((LeftCollisionY <= 0) && (LeftCollisionX <= 0)) { dirX = -dirX; }
+		//// indicate left side wins
+
+		//if ((RightCollisionY <= 0) && (RightCollisionX <= 0)) { dirX = -dirX; }
+		////indicate right side wins
+
+		Render(program);
+		Update(elapsed);
 
 		SDL_GL_SwapWindow(displayWindow);
 
