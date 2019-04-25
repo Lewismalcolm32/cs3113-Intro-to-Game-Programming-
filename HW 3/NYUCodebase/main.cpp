@@ -257,9 +257,9 @@ GameMode mode = STATE_MAIN_MENU;
 void RenderMainMenu(ShaderProgram& program) {
 	//do some hawt stuff;
 	glm::mat4 modelMatrix = glm::mat4(1.0f);
-	modelMatrix = glm::translate(modelMatrix, glm::vec3(-1.0f, 0.0f, 0.0f));
+	modelMatrix = glm::translate(modelMatrix, glm::vec3(-1.5f, 0.0f, 0.0f));
 	program.SetModelMatrix(modelMatrix);
-	DrawText(program, fontTexture, "HELLO BIT", 0.20f, 0.0f);
+	DrawText(program, fontTexture, "HI THERE, PRESS SPACEBAR!", 0.13f, 0.0f);
 
 }
 
