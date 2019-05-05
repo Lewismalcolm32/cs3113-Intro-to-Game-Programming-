@@ -75,10 +75,12 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="FlareMap.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="ShaderProgram.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="FlareMap.h" />
     <ClInclude Include="main.h" />
     <ClInclude Include="ShaderProgram.h" />
   </ItemGroup>
@@ -89,6 +91,9 @@
   </ItemGroup>
   <ItemGroup>
     <Image Include="font1.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="hw4example.txt" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
