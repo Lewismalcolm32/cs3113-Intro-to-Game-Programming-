@@ -1,3 +1,6 @@
 ﻿  main.cpp
-c:\users\malcolm lewis\desktop\nyu tandon spring 19\intro to game programing\cs3113-intro-to-game-programming-\hw 4\nyucodebase\main.cpp(174): warning C4018: '<': signed/unsigned mismatch
-  NYUCodebase.vcxproj -> C:\Users\Malcolm Lewis\Desktop\NYU TANDON Spring 19\Intro to Game Programing\cs3113-Intro-to-Game-Programming-\HW 4\Debug\NYUCodebase.exe
+c:\users\malcolm lewis\desktop\nyu tandon spring 19\intro to game programing\cs3113-intro-to-game-programming-\hw 4\nyucodebase\main.cpp(77): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+c:\users\malcolm lewis\desktop\nyu tandon spring 19\intro to game programing\cs3113-intro-to-game-programming-\hw 4\nyucodebase\main.cpp(78): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+c:\users\malcolm lewis\desktop\nyu tandon spring 19\intro to game programing\cs3113-intro-to-game-programming-\hw 4\nyucodebase\main.cpp(148): warning C4018: '<': signed/unsigned mismatch
+c:\users\malcolm lewis\desktop\nyu tandon spring 19\intro to game programing\cs3113-intro-to-game-programming-\hw 4\nyucodebase\main.cpp(375): warning C4018: '<': signed/unsigned mismatch
+C:\Users\Malcolm Lewis\Desktop\NYU TANDON Spring 19\Intro to Game Programing\cs3113-Intro-to-Game-Programming-\HW 4\Debug\NYUCodebase.pdb : fatal error LNK1318: Unexpected PDB error; FORMAT (11) 'C:\Users\Malcolm Lewis\Desktop\NYU TANDON Spring 19\Intro to Game Programing\cs3113-Intro-to-Game-Programming-\HW 4\Debug\NYUCodebase.pdb'
