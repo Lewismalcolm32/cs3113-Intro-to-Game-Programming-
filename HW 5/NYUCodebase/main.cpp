@@ -109,6 +109,10 @@ public:
 		position.x = x;
 		position.y = y;
 		velocity.x = 0.5f;
+		velocity.y = 0.0f;
+		acceleration.x = 0.0f;
+		acceleration.y = 0.0f;
+
 		size.x = TILE_SIZE;
 		size.y = TILE_SIZE;
 	}
@@ -121,6 +125,7 @@ public:
 	//void Update(float elapsed);
 	glm::vec3 position;
 	glm::vec3 velocity;
+	glm::vec3 acceleration;
 	glm::vec3 size;
 	int texture;
 	int index;
@@ -235,7 +240,7 @@ void drawTileMap(ShaderProgram &program)
 
 
 
-enum GameMode { STATE_MAIN_MENU, STATE_GAME_LEVEL };
+enum GameMode { STATE_MAIN_MENU, STATE_GAME_LEVEL };  ///LEVEL UPDATE
 GameMode mode = STATE_MAIN_MENU;
 
 void RenderMainMenu(ShaderProgram& program) {
@@ -243,7 +248,7 @@ void RenderMainMenu(ShaderProgram& program) {
 	glm::mat4 modelMatrix = glm::mat4(1.0f);
 	modelMatrix = glm::translate(modelMatrix, glm::vec3(0.9f, -0.5f, 0.0f));
 	program.SetModelMatrix(modelMatrix);
-	DrawText(program, fontTexture, "HW 4", 0.13f, 0.0f);
+	DrawText(program, fontTexture, "FINAL", 0.13f, 0.0f);
 	//DrawText(program, fontTexture, "kjb.e,nmd", 0.13f, 0.0f);
 
 }
@@ -264,33 +269,103 @@ void worldToTileCoordinates(float worldX, float worldY, int& gridX, int& gridY) 
 	gridY = (int)(worldY / -TILE_SIZE);
 }
 
-void UpdateGameLevel(GameState& state, float elapsed) {
-	
-	const Uint8 *keys = SDL_GetKeyboardState(NULL);
+float mapValue(float value, float srcMin, float srcMax, float dstMin, float dstMax) {
+	float retVal = dstMin + ((value - srcMin) / (srcMax - srcMin) * (dstMax - dstMin));
+	if (retVal < dstMin) {
+		retVal = dstMin;
+	}
+	if (retVal > dstMax) {
+		retVal = dstMax;
+	}
+	return retVal;
+}
 
-	state.player.position.y += -0.5f*elapsed; //gravity
+float animationTime = 0.0f;
+
+float lerp(float v0, float v1, float t) {
+	return (1.0 - t)*v0 + t * v1;
+}
+float friction_x = 0.5f;
+float friction_y = 0.5f;
+
+
+void UpdateGameLevel(GameState& state, float elapsed) {
+
+	animationTime = animationTime + elapsed;
+	float animationValue = mapValue(animationTime, 0.0f, 9.0f, 0.0f, 1.0f);
+	glm::mat4 modelMatrix = glm::mat4(1.0f);
+	std::cout << state.player.position.y << std::endl;
+	float xPos = lerp(0.5f, 8.0f, animationValue);
+	modelMatrix = glm::translate(modelMatrix, glm::vec3(xPos, -1.3f, 0.0));
+	program.SetModelMatrix(modelMatrix);
+	DrawText(program, fontTexture, "LEVEL ONE: GET THIS BREAD!!!", 0.13f, 0.0f);
+
+	state.player.acceleration.x = 0.0f;
+	state.player.acceleration.y = -1.0f;
+	const Uint8 *keys = SDL_GetKeyboardState(NULL);
+	if (keys[SDL_SCANCODE_LEFT])
+	{
+		state.player.velocity.x = -1.0f;
+	}
+
+	if (keys[SDL_SCANCODE_RIGHT])
+	{
+		state.player.velocity.x = 1.0f;
+	}
 	state.player2.position.y += -0.5f*elapsed; //gravity but for my twin
+
+	state.player.velocity.x = lerp(state.player.velocity.x, 0.0f, elapsed * friction_x);
+	state.player.velocity.y = lerp(state.player.velocity.y, 0.0f, elapsed * friction_y);
+	state.player.velocity.x += state.player.acceleration.x * elapsed;
+	state.player.velocity.y += state.player.acceleration.y * elapsed;
+	state.player.position.y += state.player.velocity.y * elapsed;
 
 	float bottomOfPlayer = state.player.position.y - (TILE_SIZE / 2.0f);
 	float bottomOfPlayer2 = state.player2.position.y - (TILE_SIZE / 2.0f);
 
-	float topOfPlayer = state.player.position.y + (TILE_SIZE / 2.0f);
 	int gridX;
 	int gridY;
-	int gridX2;
-	int gridY2;
 
-
+	//player bottom collision
 	worldToTileCoordinates(state.player.position.x, bottomOfPlayer, gridX, gridY);
-	worldToTileCoordinates(state.player2.position.x, bottomOfPlayer2, gridX2, gridY2);
-	if (fm.mapData[gridY][gridX] != 0) {
+	if (gridY < fm.mapHeight && gridX < fm.mapWidth && gridY >= 0 && gridX >= 0 && fm.mapData[gridY][gridX] != 0) {
 		float penetration = fabs((-TILE_SIZE * gridY) - (bottomOfPlayer));
 		state.player.position.y += penetration;
 
 	}
-	
-	if (gridY2 < fm.mapHeight && gridX < fm.mapWidth && gridY2 >= 0 && gridX2 >= 0 && fm.mapData[gridY2][gridX2] != 0) {
-		float penetration = fabs((-TILE_SIZE * gridY2) - (bottomOfPlayer2));
+
+	//top collision
+	float topOfPlayer = state.player.position.y + (TILE_SIZE / 2.0f);
+	worldToTileCoordinates(state.player.position.x, topOfPlayer, gridX, gridY);
+	if (gridY < fm.mapHeight && gridX < fm.mapWidth && gridY >= 0 && gridX >= 0 && fm.mapData[gridY][gridX] != 0) {
+		float penetration = fabs(topOfPlayer - ((-TILE_SIZE * gridY) - TILE_SIZE));
+		state.player.position.y -= penetration;
+
+	}
+	state.player.position.x += state.player.velocity.x * elapsed;
+	//Left Collision
+	float leftOfPlayer = state.player.position.x - (TILE_SIZE / 2.0f);
+	worldToTileCoordinates(leftOfPlayer, state.player.position.y, gridX, gridY);
+	if (gridY < fm.mapHeight && gridX < fm.mapWidth && gridY >= 0 && gridX >= 0 && fm.mapData[gridY][gridX] != 0) {
+		float penetration = fabs(leftOfPlayer - ((TILE_SIZE * gridX) + TILE_SIZE));
+		state.player.position.x += penetration;
+
+	}
+
+	//Right Collision
+	float rightOfPlayer = state.player.position.x + (TILE_SIZE / 2.0f);
+	worldToTileCoordinates(rightOfPlayer, state.player.position.y, gridX, gridY);
+	if (gridY < fm.mapHeight && gridX < fm.mapWidth && gridY >= 0 && gridX >= 0 && fm.mapData[gridY][gridX] != 0) {
+		float penetration = fabs((TILE_SIZE * gridX) - rightOfPlayer);
+		state.player.position.x -= penetration;
+
+	}
+
+
+	//player 2 bottom collision
+	worldToTileCoordinates(state.player2.position.x, bottomOfPlayer2, gridX, gridY);
+	if (gridY< fm.mapHeight && gridX < fm.mapWidth && gridY >= 0 && gridX >= 0 && fm.mapData[gridY][gridX] != 0) {
+		float penetration = fabs((-TILE_SIZE * gridY) - (bottomOfPlayer2));
 		state.player2.position.y += penetration;
 
 	}
@@ -310,15 +385,7 @@ void UpdateGameLevel(GameState& state, float elapsed) {
 		state.player2.position.y = -1000.0f;
 	}
 
-	if (keys[SDL_SCANCODE_LEFT])
-	{
-		state.player.position.x += -(state.player.velocity.x * elapsed);
-	}
-
-	if (keys[SDL_SCANCODE_RIGHT])
-	{
-		state.player.position.x += (state.player.velocity.x * elapsed);
-	}
+	
 	//collision
 
 
@@ -329,9 +396,12 @@ void UpdateGameLevel(GameState& state, float elapsed) {
 	program.SetViewMatrix(viewMatrix);
 }
 
+
+
+
 void Render(ShaderProgram& program) {
 	switch (mode) {
-	case STATE_MAIN_MENU:
+	case STATE_MAIN_MENU:				///LEVEL UPDATE
 		RenderMainMenu(program);
 		break;
 	case STATE_GAME_LEVEL:
@@ -340,11 +410,13 @@ void Render(ShaderProgram& program) {
 	}
 }
 
+
+
 void Update(float elapsed) {
 	switch (mode) {
 	case STATE_MAIN_MENU:
 		break;
-	case STATE_GAME_LEVEL:
+	case STATE_GAME_LEVEL:  ///LEVEL UPDATE
 		UpdateGameLevel(state, elapsed);
 		break;
 	}
@@ -362,7 +434,7 @@ int main(int argc, char *argv[])
 {
 	//setup------------------------------------------------------
 	SDL_Init(SDL_INIT_VIDEO);
-	displayWindow = SDL_CreateWindow("Pong (by Malcolm Lewis", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 640, 360, SDL_WINDOW_OPENGL);
+	displayWindow = SDL_CreateWindow("Pong (y Malcolm Lewis", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 640, 360, SDL_WINDOW_OPENGL);
 	SDL_GLContext context = SDL_GL_CreateContext(displayWindow);
 	SDL_GL_MakeCurrent(displayWindow, context);
 
@@ -379,12 +451,17 @@ int main(int argc, char *argv[])
 		if (fm.entities[i].type == "Player") {
 			Entity temp(x, y, 98);
 			temp.texture = mapTexture;
+			temp.size.x = TILE_SIZE;
+			temp.size.y = TILE_SIZE;
 			state.player = temp;
 		}
 
 		if (fm.entities[i].type == "Player2") {
 			Entity temp(x, y, 99);
 			temp.texture = mapTexture;
+			temp.size.x = TILE_SIZE;
+			temp.size.y = TILE_SIZE;
+
 			state.player2 = temp;
 		}
 
@@ -440,6 +517,21 @@ int main(int argc, char *argv[])
 						mode = STATE_GAME_LEVEL;
 					}
 				}
+
+
+				else if (event.key.keysym.scancode == SDL_SCANCODE_UP)
+				{
+					state.player.velocity.y += 1.0f;
+				}
+
+				else if (event.key.keysym.scancode == SDL_SCANCODE_Q)
+				{
+					//SDL_Quit();
+					done = true;
+				}
+
+				
+				
 			}
 			
 		}
