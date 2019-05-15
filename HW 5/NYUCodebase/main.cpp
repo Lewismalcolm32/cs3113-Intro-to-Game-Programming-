@@ -542,7 +542,6 @@ void Render(ShaderProgram& program) {
 	switch (mode) {
 	case STATE_MAIN_MENU:				//Start Screen
 		RenderMainMenu(program);
-		
 		break;
 
 
@@ -710,11 +709,10 @@ int main(int argc, char *argv[])
 	fontTexture = LoadTexture("font1.png");
 	float lastFrameTicks = 0.0f; 
 
-	//scream after players meet
-	scream = Mix_LoadWAV("shockperson.wav");
+	//Sound
+	Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 4096);
 
 	//Sound/Music for Level 1 - Ukulele, BINCH
-	Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 4096);
 	level1 = Mix_LoadMUS("bensound-ukulele.mp3");
 	//Mix_PlayMusic(level1, -1);				//in main
 	//Mix_VolumeMusic(20);						//in main
@@ -735,7 +733,8 @@ int main(int argc, char *argv[])
 	//Mix_VolumeMusic(20);									//in main
 	//Mix_FreeMusic(level3); //Free Music					//in ending
 															
-	
+	//scream after players meet
+	scream = Mix_LoadWAV("shockperson.wav");
 
 
 
