@@ -18,6 +18,8 @@
 
 #include <Windows.h>
 
+#include <SDL_mixer.h>
+
 #define SPRITESHEET_HEIGHT 8
 #define SPRITESHEET_WIDTH 16
 #define TILE_SIZE 0.125f
@@ -35,6 +37,35 @@ using namespace std;
 
 SDL_Window* displayWindow;
 ShaderProgram program;
+
+
+
+//Music
+Mix_Music* level1;
+Mix_Music* level2;
+Mix_Music* level3;
+Mix_Chunk* scream;
+
+
+//Initial Position
+float initialX;
+float initialY;
+float initialY2;
+
+
+//Shake that booty
+float screenShake = 0.0f;
+bool isHit = false;
+
+//Don't Touch Me
+vector<int> dontTouch = { 0, 126, 127, 125, 96, 97, 112, 113, 114, 103, 119, 117, 118, 115 };
+
+
+
+
+
+
+
 
 
 GLuint LoadTexture(const char *filePath) {
@@ -108,7 +139,7 @@ public:
 	{
 		position.x = x;
 		position.y = y;
-		velocity.x = 0.5f;
+		velocity.x = 0.0f;
 		velocity.y = 0.0f;
 		acceleration.x = 0.0f;
 		acceleration.y = 0.0f;
@@ -240,7 +271,7 @@ void drawTileMap(ShaderProgram &program)
 
 
 
-enum GameMode { STATE_MAIN_MENU, STATE_GAME_LEVEL };  ///LEVEL UPDATE
+enum GameMode { STATE_MAIN_MENU, STATE_GAME_LEVEL, STATE_GAME_LEVEL_2, STATE_GAME_LEVEL_3, STATE_FIN};  ///LEVEL UPDATE
 GameMode mode = STATE_MAIN_MENU;
 
 void RenderMainMenu(ShaderProgram& program) {
@@ -248,8 +279,19 @@ void RenderMainMenu(ShaderProgram& program) {
 	glm::mat4 modelMatrix = glm::mat4(1.0f);
 	modelMatrix = glm::translate(modelMatrix, glm::vec3(0.9f, -0.5f, 0.0f));
 	program.SetModelMatrix(modelMatrix);
-	DrawText(program, fontTexture, "FINAL", 0.13f, 0.0f);
-	//DrawText(program, fontTexture, "kjb.e,nmd", 0.13f, 0.0f);
+	DrawText(program, fontTexture, "FINAL", 0.2f, 0.0f);
+	//DrawText(program, fontTexture, "YOU DID THAT! FIN.", 0.13f, 0.0f);
+	//modelMatrix = glm::translate(modelMatrix, glm::vec3(0.9f, -0.5f, 0.0f));
+
+}
+
+void RenderFin(ShaderProgram& program) {
+	//do some hawt stuff;
+	glm::mat4 modelMatrix = glm::mat4(1.0f);
+	modelMatrix = glm::translate(modelMatrix, glm::vec3(0.9f, -0.5f, 0.0f));
+	program.SetModelMatrix(modelMatrix);
+	//DrawText(program, fontTexture, "FINAL", 0.13f, 0.0f);
+	DrawText(program, fontTexture, "YOU DID THAT! K, BYE NOW. FIN.", 0.13f, 0.0f);
 
 }
 
@@ -264,6 +306,9 @@ void RenderGameLevel(ShaderProgram& program, GameState &state) {
 	state.player2.Draw(program);
 
 }
+
+
+
 void worldToTileCoordinates(float worldX, float worldY, int& gridX, int& gridY) {
 	gridX = (int)(worldX / TILE_SIZE);
 	gridY = (int)(worldY / -TILE_SIZE);
@@ -292,26 +337,36 @@ float friction_y = 0.5f;
 void UpdateGameLevel(GameState& state, float elapsed) {
 
 	animationTime = animationTime + elapsed;
-	float animationValue = mapValue(animationTime, 0.0f, 9.0f, 0.0f, 1.0f);
+	float animationValue = mapValue(animationTime * 0.8f, 0.0f, 9.0f, 0.0f, 1.0f); //
 	glm::mat4 modelMatrix = glm::mat4(1.0f);
-	std::cout << state.player.position.y << std::endl;
-	float xPos = lerp(0.5f, 8.0f, animationValue);
+	std::cout << state.player.position.x << std::endl;
+	float xPos = lerp(0.5f, 18.0f, animationValue);
 	modelMatrix = glm::translate(modelMatrix, glm::vec3(xPos, -1.3f, 0.0));
 	program.SetModelMatrix(modelMatrix);
-	DrawText(program, fontTexture, "LEVEL ONE: GET THIS BREAD!!!", 0.13f, 0.0f);
+	/*DrawText(program, fontTexture, "LEVEL ONE: GET THIS BREAD!!!", 0.13f, 0.0f);*/
+	//DrawText(program, fontTexture, "LEVEL TWO: LET'S GO!!", 0.13f, 0.0f);
+	//DrawText(program, fontTexture, "LEVEL THREE: WOW OK, SIS!", 0.13f, 0.0f);
 
 	state.player.acceleration.x = 0.0f;
 	state.player.acceleration.y = -1.0f;
 	const Uint8 *keys = SDL_GetKeyboardState(NULL);
 	if (keys[SDL_SCANCODE_LEFT])
 	{
-		state.player.velocity.x = -1.0f;
+		state.player.velocity.x = -0.50f;
+	}
+	
+
+	else if (keys[SDL_SCANCODE_RIGHT])
+	{
+		state.player.velocity.x = 0.50f;
 	}
 
-	if (keys[SDL_SCANCODE_RIGHT])
-	{
-		state.player.velocity.x = 1.0f;
+	else {
+		state.player.velocity.x = 0;
 	}
+	
+
+
 	state.player2.position.y += -0.5f*elapsed; //gravity but for my twin
 
 	state.player.velocity.x = lerp(state.player.velocity.x, 0.0f, elapsed * friction_x);
@@ -325,28 +380,79 @@ void UpdateGameLevel(GameState& state, float elapsed) {
 
 	int gridX;
 	int gridY;
+	screenShake += elapsed;
+
+
 
 	//player bottom collision
 	worldToTileCoordinates(state.player.position.x, bottomOfPlayer, gridX, gridY);
-	if (gridY < fm.mapHeight && gridX < fm.mapWidth && gridY >= 0 && gridX >= 0 && fm.mapData[gridY][gridX] != 0) {
-		float penetration = fabs((-TILE_SIZE * gridY) - (bottomOfPlayer));
-		state.player.position.y += penetration;
+	if (   (gridY < fm.mapHeight)    &&     (gridX < fm.mapWidth)      &&        (gridY >= 0)      &&      (gridX >= 0)       &&     fm.mapData[gridY][gridX] != 0 /*&& fm.mapData[gridY][gridX] != 11*/) {
 
+		if (fm.mapData[gridY][gridX] == 11) 
+			{
+			state.player.position.x = initialX;
+			state.player.position.y = initialY;
+			screenShake = 0.0f;
+			isHit = true;
+
+			}
+
+		for (int i = 0; i < dontTouch.size(); i++) {
+			if (fm.mapData[gridY][gridX] == dontTouch[i])
+			{
+				cout << "bottom" << endl;
+				float penetration = fabs(bottomOfPlayer - ((-TILE_SIZE * gridY) - TILE_SIZE));
+				//while ()
+				state.player.position.y -= penetration;
+			
+			}
+			
+			
+		}
+			float penetration = fabs((-TILE_SIZE * gridY) - (bottomOfPlayer)); //(-TILE_SIZE * gridY) - (bottomOfPlayer) | (bottomOfPlayer - ((-TILE_SIZE * gridY) - TILE_SIZE))
+			state.player.position.y += penetration;
 	}
+
+		
+	
 
 	//top collision
 	float topOfPlayer = state.player.position.y + (TILE_SIZE / 2.0f);
 	worldToTileCoordinates(state.player.position.x, topOfPlayer, gridX, gridY);
 	if (gridY < fm.mapHeight && gridX < fm.mapWidth && gridY >= 0 && gridX >= 0 && fm.mapData[gridY][gridX] != 0) {
+
+		for (int i = 0; i < dontTouch.size(); i++) {
+			if (fm.mapData[gridY][gridX] == dontTouch[i])
+			{
+				cout << "top" << endl;
+				float penetration = fabs(topOfPlayer - ((-TILE_SIZE * gridY) - TILE_SIZE));
+				state.player.position.y += penetration;
+			}
+
+
+		}
 		float penetration = fabs(topOfPlayer - ((-TILE_SIZE * gridY) - TILE_SIZE));
 		state.player.position.y -= penetration;
 
 	}
+
 	state.player.position.x += state.player.velocity.x * elapsed;
 	//Left Collision
 	float leftOfPlayer = state.player.position.x - (TILE_SIZE / 2.0f);
 	worldToTileCoordinates(leftOfPlayer, state.player.position.y, gridX, gridY);
 	if (gridY < fm.mapHeight && gridX < fm.mapWidth && gridY >= 0 && gridX >= 0 && fm.mapData[gridY][gridX] != 0) {
+
+		for (int i = 0; i < dontTouch.size(); i++) {
+			if (fm.mapData[gridY][gridX] == dontTouch[i])
+			{
+				cout << "left" << endl;
+				float penetration = fabs(leftOfPlayer - ((TILE_SIZE * gridX) + TILE_SIZE));
+				state.player.position.x -= penetration;
+			}
+
+
+		}
+
 		float penetration = fabs(leftOfPlayer - ((TILE_SIZE * gridX) + TILE_SIZE));
 		state.player.position.x += penetration;
 
@@ -356,6 +462,20 @@ void UpdateGameLevel(GameState& state, float elapsed) {
 	float rightOfPlayer = state.player.position.x + (TILE_SIZE / 2.0f);
 	worldToTileCoordinates(rightOfPlayer, state.player.position.y, gridX, gridY);
 	if (gridY < fm.mapHeight && gridX < fm.mapWidth && gridY >= 0 && gridX >= 0 && fm.mapData[gridY][gridX] != 0) {
+
+
+		for (int i = 0; i < dontTouch.size(); i++) {
+			if (fm.mapData[gridY][gridX] == dontTouch[i])
+			{
+				cout << "right" << endl;
+				float penetration = fabs((TILE_SIZE * gridX) - rightOfPlayer);
+				state.player.position.x += penetration;
+
+			}
+
+
+		}
+
 		float penetration = fabs((TILE_SIZE * gridX) - rightOfPlayer);
 		state.player.position.x -= penetration;
 
@@ -378,21 +498,40 @@ void UpdateGameLevel(GameState& state, float elapsed) {
 	/*state.player2.position.x += -(state.player2.velocity.x * elapsed);
 	state.player2.position.x += (state.player2.velocity.x * elapsed);*/
 
+	//collision with my twin
 	float p1 = (abs(state.player.position.y - state.player2.position.y)) - ((state.player2.size.y + state.player.size.y) / 2);
 	float p2 = (abs(state.player.position.x - state.player2.position.x)) - ((state.player2.size.x + state.player.size.x) / 2);
 
 	if ((p1 <= 0) && (p2 <= 0)) {
 		state.player2.position.y = -1000.0f;
+		Mix_PlayChannel(-1, scream, 0); //JUMP AND SCREAM!!! (first available channel, name of scream, loop)
+		/*mode = STATE_GAME_LEVEL_3;*/
+
 	}
 
 	
-	//collision
+	
 
 
 
 
 	glm::mat4 viewMatrix = glm::mat4(1.0f);
 	viewMatrix = glm::translate(viewMatrix, glm::vec3(-state.player.position.x, -state.player.position.y, 0.0f));
+	//bool if player 2 EVEN TOUCHES ME
+	if (isHit)
+	{
+		if (screenShake < 1.0f)
+		{
+			viewMatrix = glm::translate(viewMatrix, glm::vec3(cos(screenShake*25.0f)*0.2f, sin(screenShake*25.0f)*0.2f, 0.0f));
+			
+		}
+		else {
+			isHit = false;
+		}
+	}
+
+
+
 	program.SetViewMatrix(viewMatrix);
 }
 
@@ -401,23 +540,95 @@ void UpdateGameLevel(GameState& state, float elapsed) {
 
 void Render(ShaderProgram& program) {
 	switch (mode) {
-	case STATE_MAIN_MENU:				///LEVEL UPDATE
+	case STATE_MAIN_MENU:				//Start Screen
 		RenderMainMenu(program);
+		
 		break;
-	case STATE_GAME_LEVEL:
+
+
+
+	case STATE_GAME_LEVEL:				//Level of Game						
 		RenderGameLevel(program, state);
 		break;
+
+	case STATE_GAME_LEVEL_2:				//Level of Game
+		RenderGameLevel(program, state);
+		break;
+
+	case STATE_GAME_LEVEL_3:				//Level of Game
+		RenderGameLevel(program, state);
+		break;
+
+
+
+	case STATE_FIN:				///Final Screan
+		RenderFin(program);
+		break;
 	}
+
 }
 
+//void loadTexture(GameMode mode) {
+//	if (mode == STATE_GAME_LEVEL)
+//	{
+//		fm.Load("hw5example.txt");
+//	}
+//	else if (mode == STATE_GAME_LEVEL_2)
+//	{
+//		fm.Load("hw5Level2.txt");
+//	}
+//	else if (mode == STATE_GAME_LEVEL_3)
+//	{
+//		fm.Load("hw5Level3.txt");
+//	}
+//
+//	for (int i = 0; i < fm.entities.size(); ++i) {
+//		float x = fm.entities[i].x * TILE_SIZE;
+//		float y = fm.entities[i].y * -TILE_SIZE;
+//
+//		if (fm.entities[i].type == "Player") {
+//			Entity temp(x, y, 98);
+//			temp.texture = mapTexture;
+//			temp.size.x = TILE_SIZE;
+//			temp.size.y = TILE_SIZE;
+//			state.player = temp;
+//		}
+//
+//		if (fm.entities[i].type == "Player2") {
+//			Entity temp(x, y, 99);
+//			temp.texture = mapTexture;
+//			temp.size.x = TILE_SIZE;
+//			temp.size.y = TILE_SIZE;
+//
+//			state.player2 = temp;
+//		}
+//
+//	}
+//
+//}
 
 
 void Update(float elapsed) {
 	switch (mode) {
 	case STATE_MAIN_MENU:
 		break;
+		
 	case STATE_GAME_LEVEL:  ///LEVEL UPDATE
 		UpdateGameLevel(state, elapsed);
+		//loadTexture(mode);
+		DrawText(program, fontTexture, "LEVEL ONE: GET THIS BREAD!!!", 0.13f, 0.0f);
+		break;
+	case STATE_GAME_LEVEL_2:  ///LEVEL UPDATE
+		UpdateGameLevel(state, elapsed);
+		//loadTexture(mode);
+		DrawText(program, fontTexture, "LEVEL TWO: LET'S GO!!", 0.13f, 0.0f);
+		break;
+	case STATE_GAME_LEVEL_3:  ///LEVEL UPDATE
+		UpdateGameLevel(state, elapsed);
+		//loadTexture(mode);
+		DrawText(program, fontTexture, "LEVEL THREE: WOW OK, SIS!", 0.13f, 0.0f);
+		break;
+	case STATE_FIN:
 		break;
 	}
 }
@@ -434,7 +645,7 @@ int main(int argc, char *argv[])
 {
 	//setup------------------------------------------------------
 	SDL_Init(SDL_INIT_VIDEO);
-	displayWindow = SDL_CreateWindow("Pong (y Malcolm Lewis", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 640, 360, SDL_WINDOW_OPENGL);
+	displayWindow = SDL_CreateWindow("Final by Malcolm Lewis", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 640, 360, SDL_WINDOW_OPENGL);
 	SDL_GLContext context = SDL_GL_CreateContext(displayWindow);
 	SDL_GL_MakeCurrent(displayWindow, context);
 
@@ -443,7 +654,10 @@ int main(int argc, char *argv[])
 #endif
 	mapTexture = LoadTexture("arne_sprites.png");
 	//setup---------------------------------------------------------
-	fm.Load("hw4example.txt");
+	
+	
+	fm.Load("hw5example.txt");
+
 	for (int i = 0; i < fm.entities.size(); ++i) {
 		float x = fm.entities[i].x * TILE_SIZE;
 		float y = fm.entities[i].y * -TILE_SIZE;
@@ -466,6 +680,7 @@ int main(int argc, char *argv[])
 		}
 
 	}
+
 	glViewport(0, 0, 640, 360);
 	program.Load(RESOURCE_FOLDER"vertex_textured.glsl", RESOURCE_FOLDER"fragment_textured.glsl");
 	glEnable(GL_BLEND);
@@ -495,6 +710,34 @@ int main(int argc, char *argv[])
 	fontTexture = LoadTexture("font1.png");
 	float lastFrameTicks = 0.0f; 
 
+	//scream after players meet
+	scream = Mix_LoadWAV("shockperson.wav");
+
+	//Sound/Music for Level 1 - Ukulele, BINCH
+	Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 4096);
+	level1 = Mix_LoadMUS("bensound-ukulele.mp3");
+	//Mix_PlayMusic(level1, -1);				//in main
+	//Mix_VolumeMusic(20);						//in main
+	//Mix_FreeChunk(scream); //Free Chunk		//in ending
+	//Mix_FreeMusic(level1); //Free Music		//in ending
+
+	//-------------Sound/Music for Level 2 - summer
+	//Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 4096);
+	level2 = Mix_LoadMUS("bensound-summer.mp3");
+	//Mix_PlayMusic(level1, -1);							//in main
+	//Mix_VolumeMusic(20);									//in main
+	//Mix_FreeMusic(level2); //Free Music					//in ending
+															
+	//-------------Sound/Music for Level 3 - epic
+	//Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 4096);
+	level3 = Mix_LoadMUS("bensound-epic.mp3");
+	//Mix_PlayMusic(level3, -1);							//in main
+	//Mix_VolumeMusic(20);									//in main
+	//Mix_FreeMusic(level3); //Free Music					//in ending
+															
+	
+
+
 
 
 	
@@ -515,13 +758,65 @@ int main(int argc, char *argv[])
 					if (mode == STATE_MAIN_MENU)
 					{
 						mode = STATE_GAME_LEVEL;
+						initialX = state.player.position.x;
+						initialY = state.player.position.y;
+						initialY2 = state.player2.position.y;
+
+
+						Mix_PlayMusic(level1, -1);
+						Mix_VolumeMusic(20);
+					}
+
+					else if (mode == STATE_GAME_LEVEL)
+					{
+						mode = STATE_GAME_LEVEL_2;
+						fm.Load("hw5Level2.txt");
+						state.player.position.x = initialX-3.3f;
+						state.player.position.y = initialY;
+						initialX = state.player.position.x;
+
+						state.player2.position.y = initialY2;
+
+						Mix_PlayMusic(level2, -1);
+						Mix_VolumeMusic(20);
+						//fm.Load("hw5Level2.txt");
+					}
+
+					else if (mode == STATE_GAME_LEVEL_2)
+					{
+						mode = STATE_GAME_LEVEL_3;
+						fm.Load("hw5Level3.txt");
+						state.player.position.x = initialX;
+						state.player.position.y = initialY;
+
+						state.player2.position.y = initialY2;
+
+						Mix_PlayMusic(level3, -1);
+						Mix_VolumeMusic(20);
+						//fm.Load("hw5Level3.txt");
+					}
+
+					else if (mode == STATE_GAME_LEVEL_3)
+					{
+						mode = STATE_FIN;
+						/*initialX = state.player.position.x;
+						initialY = state.player.position.y;
+						Mix_PlayMusic(level2, -1);
+						Mix_VolumeMusic(20);*/
 					}
 				}
 
 
 				else if (event.key.keysym.scancode == SDL_SCANCODE_UP)
 				{
-					state.player.velocity.y += 1.0f;
+					state.player.velocity.y = 1.0f;
+					
+				}
+
+				else if (event.key.keysym.scancode == SDL_SCANCODE_DOWN)
+				{
+					state.player.velocity.y = -1.0f;
+
 				}
 
 				else if (event.key.keysym.scancode == SDL_SCANCODE_Q)
@@ -568,6 +863,10 @@ int main(int argc, char *argv[])
 
 	}
 
+		Mix_FreeChunk(scream); //Free Chunk
+		Mix_FreeMusic(level1); //Free Music
+		Mix_FreeMusic(level2); //Free Music
+		Mix_FreeMusic(level3); //Free Music
 
 		SDL_Quit();
 		return 0;

@@ -93,6 +93,9 @@
     <Image Include="font1.png" />
   </ItemGroup>
   <ItemGroup>
+    <Text Include="..\hw5example.txt" />
+    <Text Include="..\hw5Level2.txt" />
+    <Text Include="..\hw5level3.txt" />
     <Text Include="hw4example.txt" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
