@@ -339,7 +339,7 @@ void UpdateGameLevel(GameState& state, float elapsed) {
 	animationTime = animationTime + elapsed;
 	float animationValue = mapValue(animationTime * 0.8f, 0.0f, 9.0f, 0.0f, 1.0f); //
 	glm::mat4 modelMatrix = glm::mat4(1.0f);
-	std::cout << state.player.position.x << std::endl;
+	//std::cout << state.player.position.x << std::endl;
 	float xPos = lerp(0.5f, 18.0f, animationValue);
 	modelMatrix = glm::translate(modelMatrix, glm::vec3(xPos, -1.3f, 0.0));
 	program.SetModelMatrix(modelMatrix);
@@ -364,6 +364,12 @@ void UpdateGameLevel(GameState& state, float elapsed) {
 	else {
 		state.player.velocity.x = 0;
 	}
+
+	/*if (keys[SDL_SCANCODE_W])
+	{
+		state.player2.velocity.y = 0.50f;
+	}
+*/
 	
 
 
@@ -374,6 +380,12 @@ void UpdateGameLevel(GameState& state, float elapsed) {
 	state.player.velocity.x += state.player.acceleration.x * elapsed;
 	state.player.velocity.y += state.player.acceleration.y * elapsed;
 	state.player.position.y += state.player.velocity.y * elapsed;
+
+	/*state.player2.velocity.x = lerp(state.player.velocity.x, 0.0f, elapsed * friction_x);
+	state.player2.velocity.y = lerp(state.player.velocity.y, 0.0f, elapsed * friction_y);
+	state.player2.velocity.x += state.player.acceleration.x * elapsed;
+	state.player2.velocity.y += state.player.acceleration.y * elapsed;
+	state.player2.position.y += state.player.velocity.y * elapsed;*/
 
 	float bottomOfPlayer = state.player.position.y - (TILE_SIZE / 2.0f);
 	float bottomOfPlayer2 = state.player2.position.y - (TILE_SIZE / 2.0f);
@@ -806,7 +818,10 @@ int main(int argc, char *argv[])
 				}
 
 
-				else if (event.key.keysym.scancode == SDL_SCANCODE_UP)
+
+				
+
+				if (event.key.keysym.scancode == SDL_SCANCODE_UP)
 				{
 					state.player.velocity.y = 1.0f;
 					
@@ -818,7 +833,8 @@ int main(int argc, char *argv[])
 
 				}
 
-				else if (event.key.keysym.scancode == SDL_SCANCODE_Q)
+
+				if (event.key.keysym.scancode == SDL_SCANCODE_Q)
 				{
 					//SDL_Quit();
 					done = true;

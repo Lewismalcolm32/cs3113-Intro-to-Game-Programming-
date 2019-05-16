@@ -3,9 +3,9 @@ c:\users\malcolm lewis\desktop\nyu tandon spring 19\intro to game programing\cs3
 c:\users\malcolm lewis\desktop\nyu tandon spring 19\intro to game programing\cs3113-intro-to-game-programming-\hw 5\nyucodebase\main.cpp(109): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
 c:\users\malcolm lewis\desktop\nyu tandon spring 19\intro to game programing\cs3113-intro-to-game-programming-\hw 5\nyucodebase\main.cpp(184): warning C4018: '<': signed/unsigned mismatch
 c:\users\malcolm lewis\desktop\nyu tandon spring 19\intro to game programing\cs3113-intro-to-game-programming-\hw 5\nyucodebase\main.cpp(331): warning C4244: 'return': conversion from 'double' to 'float', possible loss of data
-c:\users\malcolm lewis\desktop\nyu tandon spring 19\intro to game programing\cs3113-intro-to-game-programming-\hw 5\nyucodebase\main.cpp(400): warning C4018: '<': signed/unsigned mismatch
-c:\users\malcolm lewis\desktop\nyu tandon spring 19\intro to game programing\cs3113-intro-to-game-programming-\hw 5\nyucodebase\main.cpp(424): warning C4018: '<': signed/unsigned mismatch
-c:\users\malcolm lewis\desktop\nyu tandon spring 19\intro to game programing\cs3113-intro-to-game-programming-\hw 5\nyucodebase\main.cpp(445): warning C4018: '<': signed/unsigned mismatch
-c:\users\malcolm lewis\desktop\nyu tandon spring 19\intro to game programing\cs3113-intro-to-game-programming-\hw 5\nyucodebase\main.cpp(467): warning C4018: '<': signed/unsigned mismatch
-c:\users\malcolm lewis\desktop\nyu tandon spring 19\intro to game programing\cs3113-intro-to-game-programming-\hw 5\nyucodebase\main.cpp(660): warning C4018: '<': signed/unsigned mismatch
+c:\users\malcolm lewis\desktop\nyu tandon spring 19\intro to game programing\cs3113-intro-to-game-programming-\hw 5\nyucodebase\main.cpp(412): warning C4018: '<': signed/unsigned mismatch
+c:\users\malcolm lewis\desktop\nyu tandon spring 19\intro to game programing\cs3113-intro-to-game-programming-\hw 5\nyucodebase\main.cpp(436): warning C4018: '<': signed/unsigned mismatch
+c:\users\malcolm lewis\desktop\nyu tandon spring 19\intro to game programing\cs3113-intro-to-game-programming-\hw 5\nyucodebase\main.cpp(457): warning C4018: '<': signed/unsigned mismatch
+c:\users\malcolm lewis\desktop\nyu tandon spring 19\intro to game programing\cs3113-intro-to-game-programming-\hw 5\nyucodebase\main.cpp(479): warning C4018: '<': signed/unsigned mismatch
+c:\users\malcolm lewis\desktop\nyu tandon spring 19\intro to game programing\cs3113-intro-to-game-programming-\hw 5\nyucodebase\main.cpp(672): warning C4018: '<': signed/unsigned mismatch
   NYUCodebase.vcxproj -> C:\Users\Malcolm Lewis\Desktop\NYU TANDON Spring 19\Intro to Game Programing\cs3113-Intro-to-Game-Programming-\HW 5\Debug\NYUCodebase.exe
